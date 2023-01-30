@@ -13,7 +13,7 @@ namespace Chess
 
             Tuple<int, Move> move = GenerateRecursiveMoves(allyPieces, enemyPieces, null, 4, 0, 0, 0);
             //Trace.WriteLine(move.Item1);
-            return (move.Item2);
+            return (null);
 
             
 
@@ -24,163 +24,157 @@ namespace Chess
 
         Tuple<int, Move> GenerateRecursiveMoves(Array allyPieces, Array enemyPieces, Move? firstMove, int depth, int count, int allyScore, int enemyScore)
         {
-            if (count == depth)
+           if(count == depth)
             {
-                ////Trace.WriteLine(allyScore - enemyScore);
-                return new Tuple<int, Move>(allyScore - enemyScore, firstMove);
-
+                if(allyScore - enemyScore != 0)
+                {
+                    Trace.WriteLine(firstMove.start.x + " " + firstMove.start.y + " " + firstMove.end.x + " " + firstMove.end.y);
+                }
+                
+               
+                return (new Tuple<int, Move>(allyScore - enemyScore, firstMove));
             }
-            ArrayList possibleLines = new ArrayList();
+         
+
+            ArrayList potentialMoves = new ArrayList();
+            ArrayList potentialCaptures = new ArrayList();
+
             foreach (ChessPiece ally in allyPieces)
             {
-                if (ally.name != "Pawn")
+              
+
+                ArrayList moves = GenerateMoves(ally);
+                ArrayList vision = GenerateVision(ally);
+                foreach(ChessPiece enemy in enemyPieces)
                 {
-                    continue;
+                    if (vision != null && vision.)
+                    {
+                        Trace.WriteLine("here");
+                        potentialCaptures.Add(GenerateCapture(ally, enemy));
+                    }
+                    if (moves != null && moves.Contains(enemy.square))
+                    {
+                        moves.Remove(enemy.square);
+                    }
                 }
-
-                ArrayList moves = GetPawnMoves(ally, enemyPieces);
-                foreach (Square square in moves)
+                if(moves != null)
                 {
-                    if (count == 0)
+                    foreach (Square move in moves)
                     {
-                        firstMove = new Move(ally.square, square, ally);
+                        potentialMoves.Add(new Move(ally.square, move, ally));
                     }
-                    foreach (ChessPiece enemy in enemyPieces)
-                    {
-                        if (enemy.square.x == square.x && enemy.square.y == square.y)
-                        {
-                            allyScore += chessPieceDict.GetPieceValue(enemy.name);
-                            ally.SetSquare(square);
-                            //enemy.alive = false;
-                            possibleLines.Add(GenerateRecursiveMoves(enemyPieces, allyPieces, firstMove, depth, count + 1, allyScore, enemyScore));
-                        }
-                        else
-                        {
-                            ally.SetSquare(square);
-                            possibleLines.Add(GenerateRecursiveMoves(enemyPieces, allyPieces, firstMove, depth, count + 1, allyScore, enemyScore));
-                        }
-                    }
-                   
                 }
-
-                
-
-
-
-                
-
-
 
             }
+
             int bestScore = 0;
             Move bestMove = null;
-         
-            foreach (Tuple<int, Move> possibleMove in possibleLines)
+            foreach (Move move in potentialMoves)
             {
-                if (possibleMove.Item1 > bestScore)
+                if (count == 0)
                 {
-                    bestScore = possibleMove.Item1;
+                    firstMove = move;
+                }
+                MakeMove(move, allyPieces);
+                Tuple<int, Move> evaluatedLine = GenerateRecursiveMoves(allyPieces, enemyPieces, firstMove, depth, count + 1, allyScore, enemyScore);
+                UndoMove(move, allyPieces);
+                if (evaluatedLine.Item1 > bestScore)
+                {
                     
-                    bestMove = possibleMove.Item2;
-
+                    bestScore = evaluatedLine.Item1;
+                    bestMove = move;
                 }
             }
-            if(possibleLines.Count == 0)
+
+            foreach (Tuple<Move, ChessPiece> capture in potentialCaptures)
             {
-                //Trace.WriteLine("Woah");
+                Trace.WriteLine("here");
+                if (count == 0)
+                {
+                    firstMove = capture.Item1;
+                }
+                Trace.WriteLine("HERE!");
+                MakeMove(capture.Item1, allyPieces);
+                capture.Item2.alive = false;
+                Tuple<int, Move> evaluatedLine = GenerateRecursiveMoves(allyPieces, enemyPieces, firstMove, depth, count + 1, allyScore + chessPieceDict.GetPieceValue(capture.Item2.name), enemyScore);
+                capture.Item2.alive = true;
+                UndoMove(capture.Item1, allyPieces);
+                if (evaluatedLine.Item1 > bestScore)
+                {
+                    Trace.WriteLine("Here");
+                    bestScore = evaluatedLine.Item1;
+                    bestMove = capture.Item1;
+                }
             }
-            if(bestMove != null)
+
+
+
+            // write move to console
+            if (count == 0)
             {
-             
+                if(bestMove == null)
+                {
+                    Trace.WriteLine("wtf");
+                }
+                else
+                {
+                Trace.WriteLine(bestMove.start.x + " " + bestMove.start.y + " " + bestMove.end.x + " " + bestMove.end.y);
+                }
             }
             
-            return (new Tuple<int, Move>(bestScore, bestMove));
 
+            return (bestMove == null ? new Tuple<int, Move>(0, null) : new Tuple<int, Move>(bestScore, bestMove));
 
         }
 
 
-
-
-
-        public ArrayList GetPawnMoves(ChessPiece piece, Array enemyPieces)
+        private void MakeMove(Move move, Array allyPieces)
         {
-            ArrayList moves = new ArrayList();
-            int x = piece.square.x;
-            int y = piece.square.y;
-            ChessPiece enemyPiece = (ChessPiece)enemyPieces.GetValue(piece.square.x);
-            if(enemyPiece.name != "Pawn")
-            {
-                Trace.WriteLine("Something else");
-            }
-            if (piece.color == "White")
-            {
-                if (x < 7)
-                {
-                    ChessPiece adjacentRight = (ChessPiece)enemyPieces.GetValue(piece.square.x + 1);
-                    if (adjacentRight != null && adjacentRight.square.y == y + 1)
-                    {
-                        moves.Add(new Square(x + 1, y + 1));
-                    }
-
-                }
-                if (x > 0)
-                {
-                    ChessPiece adjacentLeft = (ChessPiece)enemyPieces.GetValue(piece.square.x - 1);
-                    if (adjacentLeft != null && adjacentLeft.square.y == y + 1)
-                    {
-                        moves.Add(new Square(x - 1, y + 1));
-                    }
-                }
-                if (y == 7 || (enemyPiece.square.y == y + 1 && enemyPiece.square.x == x))
-                {
-                    return moves;
-                }
-                else
-                {
-                    moves.Add(new Square(x, y + 1));
-                    if (y == 1)
-                    {
-                        moves.Add(new Square(x, y + 2));
-                    }
-                    
-                }
-
-            }
-            else
-            {
-                if (x < 7)
-                {
-                    ChessPiece adjacentRight = (ChessPiece)enemyPieces.GetValue(piece.square.x + 1);
-                    if (adjacentRight != null && adjacentRight.square.y == y - 1)
-                    {
-                        moves.Add(new Square(x + 1, y - 1));
-                    }
-                }
-                if (x > 0)
-                {
-                    ChessPiece adjacentLeft = (ChessPiece)enemyPieces.GetValue(piece.square.x - 1);
-                    if (adjacentLeft != null && adjacentLeft.square.y == y - 1)
-                    {
-                        moves.Add(new Square(x - 1, y - 1));
-                    }
-                }
-                if (y == 0 || (enemyPiece.square.y == y - 1 && enemyPiece.square.x == x))
-                {
-                    return moves;
-                }
-                else
-                {
-                    moves.Add(new Square(x, y - 1));
-                    if (y == 6)
-                    {
-                        moves.Add(new Square(x, y - 2));
-                    }
-                   
-                }
-            }
-            return moves;
+            move.piece.SetSquare(move.end);
+            allyPieces.SetValue(move.piece, move.piece.id);
         }
+
+        private void UndoMove(Move move, Array allyPieces)
+        {
+            move.piece.SetSquare(move.start);
+            allyPieces.SetValue(move.piece, move.piece.id);
+        }
+
+        
+
+        private Tuple<Move, ChessPiece> GenerateCapture(ChessPiece ally, ChessPiece enemy)
+        {
+            Move move = new Move(ally.square, enemy.square, ally);
+            return (new Tuple<Move, ChessPiece>(move, enemy));
+        }
+
+        private ArrayList GenerateMoves(ChessPiece ally)
+        {
+            switch (ally)
+            {
+                case Pawn pawn:
+                    return pawn.GetMoves();
+                default:
+                    return null;
+            }
+        }
+
+        private ArrayList GenerateVision(ChessPiece ally)
+        {
+            switch (ally)
+            {
+                case Pawn pawn:
+                    return pawn.GetVision();
+                default:
+                    return null;
+            }
+        }
+
+
+
+
+
+
 
     }
 

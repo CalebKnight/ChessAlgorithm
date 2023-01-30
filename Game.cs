@@ -20,6 +20,10 @@ namespace Chess
         public Game()
         {
             InitGame();
+            foreach(ChessPiece piece in whitePieces)
+            {
+                Trace.WriteLine(piece.GetType());
+            }
         }
 
         public void PlayMove(string color)
@@ -97,7 +101,7 @@ namespace Chess
         {
             for (int j = 0; j < 8; j++)
             {
-                ChessPiece pawn = new ChessPiece(j, "Pawn", "♟︎", "White", board.GetSquare(j,1));
+                ChessPiece pawn = new Pawn(j, "Pawn", "♟︎", "White", board.GetSquare(j,1), true);
                 // This overload uses a dict to find the relevant piece
                 ChessPiece piece = new ChessPiece(j, "White", board.GetSquare(j,0));
                 whitePieces.SetValue(pawn, j);
@@ -109,7 +113,7 @@ namespace Chess
         {
             for (int j = 0; j < 8; j++)
             {
-                ChessPiece pawn = new ChessPiece(j, "Pawn", "♟︎", "Black", board.GetSquare(j, 6));
+                ChessPiece pawn = new Pawn(j, "Pawn", "♟︎", "Black", board.GetSquare(j, 6), true);
                 // This overload uses a dict to find the relevant piece
                 ChessPiece piece = new ChessPiece(j, "Black", board.GetSquare(j, 7));
                 blackPieces.SetValue(pawn, j);
@@ -123,8 +127,15 @@ namespace Chess
             for (int i = 0; i < array.Length; i++)
             {
                 ChessPiece piece = (ChessPiece)array.GetValue(i);
-                ChessPiece pieceCopy = new ChessPiece(piece.id, piece.name, piece.icon, piece.color, piece.square, piece.alive);
-                copy.SetValue(pieceCopy, i);
+
+                if(piece.name == "Pawn")
+                {
+                    copy.SetValue(new Pawn(piece.id, piece.name, piece.icon, piece.color, piece.square, piece.alive), i);
+                }
+                else
+                {
+                    copy.SetValue(new ChessPiece(piece.id, piece.color, piece.square), i);
+                }
             }
             return copy;
         }
